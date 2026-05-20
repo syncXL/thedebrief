@@ -17,7 +17,7 @@ def distribute_to_deep_dive(story : state.Lore):
             entity["next_story"] = story["articles"][ind+1]["article_content"]["title"]
         else:
             links = ", ".join(links)
-            entity["story"] += f"\n Sources for the news include \n {links}"
+            entity["story"]["article_content"]["content"] += f" \n Sources for the news include \n {links}"
         payload = Send("deep_dive", entity)
         payloads.append(payload)
     return payloads

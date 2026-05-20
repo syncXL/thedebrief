@@ -55,7 +55,7 @@ async def generate_deep_dive(deep_dive : director_states.DeepDiveSection) -> sta
     audio_generator = dependencies.get_tts()
     logging.info("generate_deep_dive: starting deep dive generation for story id %s", deep_dive["id"])
 
-    story_content = deep_dive["story"]["article_content"]["content"]
+    story_content = deep_dive["story"]["article_content"]["content"] 
     research_context = deep_dive["story"]["context"]
     persona_insights = []
     for insight in deep_dive["story"]["personas"]:
