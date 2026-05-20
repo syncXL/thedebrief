@@ -12,18 +12,40 @@ START → Inquisitor → Herald → Researcher (parallel) → Director → END
 
 | Agent | Role |
 |---|---|
-| **Inquisitor** (librarian) | LLM discovers relevant RSS feeds from a global catalog |
-| **Herald** | Fetches recent articles, selects top stories, downloads full text |
-| **Researcher** (correspondent + persona) | Web research + multi-persona analysis per article |
-| **Director** | Writes scripts, generates TTS audio, merges into final MP3 |
+| **Inquisitor** | Discovers relevant RSS feeds from a global catalog based on your request |
+| **Herald** | Fetches today's articles, selects the top 10 stories, downloads full text |
+| **Researcher** | Per-article: web research for context + multi-persona roundtable analysis (runs in parallel across all stories) |
+| **Director** | Writes anchor scripts, generates multi-voice TTS audio, normalizes and merges into a final MP3 episode |
+
+## Personas
+
+Each article is analyzed by 2–4 AI personas selected by an LLM router based on relevance. Nine personas are available:
+
+`critic` `economist` `geopolitician` `historian` `lawyer` `politician` `scientist` `socialite` `tech_analyst`
+
+The **historian** always runs last, synthesizing all persona insights into a closing perspective.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Orchestration | LangGraph (StateGraph, Send API, sub-graphs) |
+| LLM | Gemma 4 26B / 31B via OpenRouter |
+| TTS | Gemini 2.5 Flash Preview (multi-speaker) |
+| Web Research | Tavily |
+| Article Parsing | newspaper4k |
+| Audio Processing | pydub + pyloudnorm (LUFS normalization) |
+| Storage | Cloudinary CDN |
+| Backend | FastAPI + uvicorn |
+| Frontend | React (Lovable) |
 
 ## Setup
 
 ### Prerequisites
-
-- Python >=3.12
+- Python ≥ 3.12
 - [uv](https://docs.astral.sh/uv/)
-- ffmpeg
+- Docker (recommended)
+- ffmpeg (only required outside Docker)
 
 ### Environment
 
@@ -31,52 +53,37 @@ START → Inquisitor → Herald → Researcher (parallel) → Director → END
 cp .env.example .env
 ```
 
-Required variables:
-
 | Variable | Source |
 |---|---|
 | `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) |
-| `GOOGLE_API_KEY` | [aistudio.google.com](https://aistudio.google.com) |
+| `GOOGLE_API_KEY` | [aistudio.google.com](https://aistudio.google.com) — for TTS |
 | `SEARCH_API_KEY` | [tavily.com](https://tavily.com) |
 | `CLOUDINARY_CLOUD_NAME` | [cloudinary.com](https://cloudinary.com) |
 | `CLOUDINARY_API_KEY` | — |
 | `CLOUDINARY_API_SECRET` | — |
 
-### Run
+### Docker (recommended)
+
+```bash
+docker compose up --build
+```
+
+### Local
 
 ```bash
 uv sync
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-### Docker
-
-```bash
-docker compose up --build
-```
-
 ## API
 
-| Endpoint | Body | Runs |
-|---|---|---|
-| `POST /generate-episode` | `{"request": "..."}` | Full pipeline |
-| `POST /librarian` | `{"request": "..."}` | Feed discovery only |
-| `POST /herald` | `{"request": {...}}` | Article extraction only |
-| `POST /correspondent` | `{"request": {...}}` | Research only |
-| `POST /persona` | `{"request": {...}}` | Persona roundtable only |
-| `POST /director` | `{"request": {...}}` | Audio production only |
+| Endpoint | Description |
+|---|---|
+| `POST /generate-episode` | Full pipeline — returns `audio_url` and `headline_transcript` |
+| `POST /librarian` | Feed discovery only |
+| `POST /herald` | Article extraction only |
+| `POST /correspondent` | Research only |
+| `POST /persona` | Persona roundtable only |
+| `POST /director` | Audio production only |
 
-## Personas
-
-Nine expert personas analyze each article: critic, economist, geopolitician, historian, lawyer, politician, scientist, socialite, tech_analyst. The LLM router selects 2–4 relevant personas per article, then the historian compiles a synthesis.
-
-## Tech Stack
-
-- **Orchestration:** LangGraph (StateGraph, Send, sub-graphs)
-- **LLM:** OpenRouter → Gemini, with direct Google API fallback
-- **TTS:** Gemini 2.5 Flash Preview (multi-speaker)
-- **Audio:** pydub, pyloudnorm (LUFS normalization), MP3 export
-- **Storage:** Cloudinary CDN
-- **Parser:** newspaper4k
-- **Search:** Tavily
-- **Server:** FastAPI + uvicorn
+All endpoints accept `{"request": "..."}`.
