@@ -23,6 +23,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+async def health_check():
+    return {"status": "ok"}
+
 # Compile once at module level
 logger.info("Compiling librarian state graph at startup")
 librarian_graph = librarian_state_graph.build_graph().compile()
